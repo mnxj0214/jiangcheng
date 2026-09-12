@@ -30,27 +30,34 @@ st.caption("系统自动扫描当前排期与活动数据，主动提示风险")
 import pandas as pd
 try:
     df = pd.read_excel("data.xlsx")
-    # 1. 检测排期重叠
-    conflict_count = 0
-    for i in range(len(df)):
-        for j in range(i+1, len(df)):
-            if df.iloc[i]["场地"] == df.iloc[j]["场地"]:
-                if df.iloc[i]["开始日期"] <= df.iloc[j]["结束日期"] and df.iloc[i]["结束日期"] >= df.iloc[j]["开始日期"]:
-                    conflict_count += 1
-    
-    if conflict_count > 0:
-        st.warning(f"⚠️ 检测到 {conflict_count} 处排期冲突，请前往【排期冲突检测】处理。")
-    else:
-        st.success("✅ 当前排期正常，无冲突。")
-    
-    # 2. 天气/人流预警（模拟逻辑）
-    import datetime
-    today = datetime.date.today()
-    upcoming = df[pd.to_datetime(df["开始日期"]).dt.date >= today]
-    if len(upcoming) > 0:
-        st.info(f"📅 未来有 {len(upcoming)} 场活动即将举办，建议提前做好安保与交通预案。")
 except:
-    st.info("暂无排期数据，请先导入。")
+    # 兜底数据：云端没有 Excel 时自动使用
+    df = pd.DataFrame([
+        {"活动名称": "国庆灯光秀", "开始日期": "2026-10-01", "结束日期": "2026-10-03", "场地": "镜湖公园"},
+        {"活动名称": "中秋游园会", "开始日期": "2026-09-25", "结束日期": "2026-09-27", "场地": "鸠兹广场"},
+        {"活动名称": "汉服文化节", "开始日期": "2026-10-05", "结束日期": "2026-10-07", "场地": "中山路步行街"}
+    ])
+
+# 1. 检测排期冲突
+conflict_count = 0
+for i in range(len(df)):
+    for j in range(i+1, len(df)):
+        if df.iloc[i]["场地"] == df.iloc[j]["场地"]:
+            if str(df.iloc[i]["开始日期"]) <= str(df.iloc[j]["结束日期"]) and str(df.iloc[i]["结束日期"]) >= str(df.iloc[j]["开始日期"]):
+                conflict_count += 1
+
+if conflict_count > 0:
+    st.warning(f"⚠️ 检测到 {conflict_count} 处排期冲突，请前往【排期冲突检测】处理。")
+else:
+    st.success("✅ 当前排期正常，无冲突。")
+
+# 2. 未来活动预警
+import datetime
+today = datetime.date.today()
+df["开始日期"] = pd.to_datetime(df["开始日期"]).dt.date
+upcoming = df[df["开始日期"] >= today]
+if len(upcoming) > 0:
+    st.info(f"📅 未来有 {len(upcoming)} 场活动即将举办，建议提前做好安保与交通预案。")
 st.subheader("芜湖市镜湖区文旅局")
 
 st.markdown("""
